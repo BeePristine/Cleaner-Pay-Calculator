@@ -1,0 +1,538 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Bee Pristine — Cleaner Pay Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Poppins',sans-serif;background:#f4f6f9;min-height:100vh;padding:1rem;color:#0D1B2A}
+.container{max-width:900px;margin:0 auto}
+.header{background:#0D1B2A;border-radius:16px;padding:1.5rem 2rem;margin-bottom:1.25rem;text-align:center}
+.header-label{font-size:11px;font-weight:500;color:#A0B4C8;letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px}
+.header-title{font-size:26px;font-weight:600;color:#fff;margin-bottom:4px}
+.header-sub{font-size:13px;color:#A0B4C8}
+.tab-bar{display:flex;gap:6px;margin-bottom:1.25rem;overflow-x:auto;padding-bottom:4px}
+.tab-btn{flex:1;min-width:150px;padding:10px 14px;border-radius:12px;border:0.5px solid #E0E4EA;background:#fff;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;color:#6B7280;cursor:pointer;transition:all .15s;text-align:center;white-space:nowrap}
+.tab-btn:hover{border-color:#2A9D8F;color:#2A9D8F}
+.tab-btn.active{background:#0D1B2A;color:#fff;border-color:#0D1B2A}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.form-card{background:#fff;border-radius:16px;padding:1.5rem;margin-bottom:1.25rem;border:0.5px solid #E0E4EA;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.form-title{font-size:12px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;font-weight:500;color:#6B7280;text-transform:uppercase;letter-spacing:.06em}
+input[type=number],input[type=text],input[type=date],select{width:100%;padding:11px 12px;border:0.5px solid #D1D5DB;border-radius:10px;font-family:'Poppins',sans-serif;font-size:16px;color:#0D1B2A;background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+input:focus,select:focus{border-color:#2A9D8F;box-shadow:0 0 0 3px rgba(42,157,143,0.12)}
+.period-banner{background:#EAF2FA;border:0.5px solid #B8D4EA;border-radius:10px;padding:10px 14px;font-size:13px;color:#1B5E8A;margin-top:12px;line-height:1.6}
+.period-banner strong{font-weight:600}
+.mode-banner{background:#EAF2FA;border:0.5px solid #B8D4EA;border-radius:10px;padding:9px 13px;font-size:12px;color:#1B5E8A;margin-bottom:12px}
+.mode-banner strong{font-weight:600}
+.day-row{display:grid;grid-template-columns:90px 1fr 1fr 1.6fr;gap:8px;align-items:center;padding:8px 0;border-bottom:0.5px solid #F3F4F6}
+.day-row:last-of-type{border-bottom:none}
+.day-name{font-size:13px;font-weight:600;color:#0D1B2A}
+.day-sub{font-size:10px;color:#9CA3AF;font-weight:400;display:block}
+.time-wrap{position:relative;display:flex;align-items:center}
+.time-wrap span{position:absolute;right:10px;font-size:10px;color:#9CA3AF;font-weight:500;pointer-events:none}
+.time-wrap input{padding-right:34px;text-align:left}
+.day-head{display:grid;grid-template-columns:90px 1fr 1fr 1.6fr;gap:8px;margin-bottom:6px}
+.day-head span{font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em}
+.adj-row{display:grid;grid-template-columns:150px 120px 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:0.5px solid #F3F4F6}
+.adj-row:last-of-type{border-bottom:none}
+.adj-label{font-size:13px;color:#0D1B2A;font-weight:500}
+.adj-label small{display:block;font-size:10px;color:#9CA3AF;font-weight:400}
+.money-wrap{position:relative;display:flex;align-items:center}
+.money-wrap span{position:absolute;left:11px;font-size:13px;color:#6B7280;font-weight:500}
+.money-wrap input{padding-left:22px}
+.qty-controls{display:flex;align-items:center;gap:6px}
+.qty-btn{width:30px;height:30px;border-radius:50%;border:0.5px solid #D1D5DB;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;color:#0D1B2A;flex-shrink:0}
+.qty-btn:hover{border-color:#2A9D8F;color:#2A9D8F}
+.qty-val{min-width:24px;text-align:center;font-weight:600;font-size:14px}
+.note-input input{font-size:13px;padding:9px 11px}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.metric{background:#fff;border:0.5px solid #E0E4EA;border-radius:12px;padding:.875rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.metric-label{font-size:11px;color:#6B7280;font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.metric-val{font-size:22px;font-weight:600;color:#0D1B2A;line-height:1.1}
+.metric-val.teal{color:#2A9D8F}
+.metric-val.green{color:#0F6E56}
+.metric-note{font-size:11px;color:#9CA3AF;margin-top:3px}
+.detail-card{background:#fff;border:0.5px solid #E0E4EA;border-radius:16px;padding:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.detail-title{font-size:14px;font-weight:600;color:#0D1B2A;margin-bottom:12px;padding-bottom:10px;border-bottom:0.5px solid #E0E4EA}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid #F3F4F6;font-size:13px}
+.detail-row:last-of-type{border-bottom:none}
+.dl{color:#6B7280}
+.dv{font-weight:500;color:#0D1B2A}
+.dv.green{color:#0F6E56}
+.dv.red{color:#A32D2D}
+.divider{height:0.5px;background:#E0E4EA;margin:8px 0}
+.section-label{font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 2px}
+.detail-row.highlight{background:#f0faf8;margin:4px -1.25rem 0;padding:11px 1.25rem;border-radius:0 0 12px 12px;border-bottom:none}
+.detail-row.highlight .dl{color:#0D1B2A;font-weight:600;font-size:14px}
+.detail-row.highlight .dv{color:#0F6E56;font-size:16px;font-weight:600}
+.btn{padding:11px 18px;background:#0D1B2A;color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#1B5E8A}
+.btn.ghost{background:#fff;color:#0D1B2A;border:0.5px solid #D1D5DB}
+.btn.ghost:hover{border-color:#2A9D8F;color:#2A9D8F}
+.btn.teal{background:#2A9D8F}
+.btn.teal:hover{background:#238579}
+.toast{display:none;margin-top:10px;padding:9px 13px;background:#E1F5EE;border:0.5px solid #A8DBC8;border-radius:10px;font-size:12px;color:#0F6E56;font-weight:500}
+/* Week Of table */
+.wo-table-wrap{overflow-x:auto}
+table.wo{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+table.wo th{text-align:left;font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:0.5px solid #E0E4EA;white-space:nowrap}
+table.wo td{padding:10px 10px;border-bottom:0.5px solid #F3F4F6;color:#0D1B2A;vertical-align:top}
+table.wo tr:last-child td{border-bottom:none}
+table.wo td.num{font-weight:600;white-space:nowrap}
+table.wo tfoot td{border-top:0.5px solid #E0E4EA;border-bottom:none;font-weight:600;background:#f0faf8}
+.wo-remove{background:none;border:none;color:#A32D2D;font-size:16px;cursor:pointer;line-height:1;padding:0 4px}
+.wo-empty{text-align:center;padding:2rem 1rem;color:#9CA3AF;font-size:13px}
+.footer{text-align:center;margin-top:1.5rem;font-size:11px;color:#9CA3AF}
+.footer strong{color:#6B7280}
+@media(max-width:560px){
+  .result-grid{grid-template-columns:1fr}
+  .day-row,.day-head{grid-template-columns:62px 1fr 1fr 1.4fr;gap:6px}
+  .adj-row{grid-template-columns:1fr 110px;gap:6px}
+  .adj-row .note-input{grid-column:1/-1}
+  .tab-btn{min-width:120px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <div class="header-label">Bee Pristine</div>
+  <div class="header-title">Cleaner Pay Calculator</div>
+  <div class="header-sub">Weekly pay breakdown · Friday to Thursday · Live net pay</div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('calc',this)">🧮 Pay Calculator</button>
+  <button class="tab-btn" onclick="switchTab('weekof',this)">📅 Week Of</button>
+</div>
+
+<!-- ===================== PAY CALCULATOR TAB ===================== -->
+<div class="tab-content active" id="tab-calc">
+
+<!-- EMPLOYEE & PERIOD -->
+<div class="form-card">
+  <div class="form-title">Employee & Pay Period</div>
+  <div class="form-grid">
+    <div class="field"><label>First Name</label><input type="text" id="p-first" placeholder="First name" oninput="calcPay()"></div>
+    <div class="field"><label>Last Name (optional)</label><input type="text" id="p-last" placeholder="Last name" oninput="calcPay()"></div>
+    <div class="field"><label>Month</label><select id="p-month" onchange="calcPay()"></select></div>
+    <div class="field"><label>Week Starting (Friday)</label><input type="date" id="p-week" onchange="onWeekChange()"></div>
+    <div class="field"><label>Payment Type</label><select id="p-paytype" onchange="calcPay()"><option value="Zelle">Zelle</option><option value="CashApp">CashApp</option></select></div>
+  </div>
+  <div class="period-banner" id="p-period-banner">Pick a week start date to set the pay period.</div>
+</div>
+
+<!-- DAILY HOURS -->
+<div class="form-card">
+  <div class="form-title">Daily Hours & Cleaning Type</div>
+  <div class="mode-banner"><strong>Enter hours and minutes for each day worked.</strong> Leave a day blank if the cleaner was off. Pick the cleaning type performed that day.</div>
+  <div class="day-head"><span>Day</span><span>Hours</span><span>Minutes</span><span>Cleaning Type</span></div>
+  <div id="p-days"></div>
+</div>
+
+<!-- RATE -->
+<div class="form-card">
+  <div class="form-title">Pay Rate</div>
+  <div class="form-grid">
+    <div class="field"><label>Hourly Rate</label><div class="money-wrap"><span>$</span><input type="number" id="p-rate" value="24.00" min="0" max="200" step="0.50" inputmode="decimal" oninput="calcPay()"></div></div>
+  </div>
+</div>
+
+<!-- SUBTRACTIONS -->
+<div class="form-card">
+  <div class="form-title">Subtractions (reduce pay)</div>
+  <div id="p-subs"></div>
+</div>
+
+<!-- ADDITIONAL PAY -->
+<div class="form-card">
+  <div class="form-title">Additional Pay (add to pay)</div>
+  <div class="adj-row">
+    <div class="adj-label">Marketing Photos<small>$25.00 each</small></div>
+    <div class="qty-controls">
+      <button class="qty-btn" onclick="changePhotoQty(-1)">−</button>
+      <span class="qty-val" id="p-photo-qty">0</span>
+      <button class="qty-btn" onclick="changePhotoQty(1)">+</button>
+    </div>
+    <div class="note-input"><input type="text" id="p-photo-note" placeholder="Note (optional)" oninput="calcPay()"></div>
+  </div>
+  <div id="p-adds"></div>
+</div>
+
+<!-- OUTPUT -->
+<div id="p-output"></div>
+
+<!-- ACTIONS -->
+<div class="form-card">
+  <div class="form-title">Save & Generate</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn teal" onclick="saveToWeek()">💾 Save to Week Of</button>
+    <button class="btn" onclick="generatePayEmail()">✉️ Generate Email</button>
+    <button class="btn ghost" onclick="resetForm()">↺ Reset Form</button>
+  </div>
+  <div class="toast" id="p-save-toast"></div>
+  <div id="p-msg-output" style="display:none;margin-top:12px;">
+    <textarea id="p-msg-text" readonly style="width:100%;min-height:420px;padding:12px;border:0.5px solid #D1D5DB;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;color:#0D1B2A;line-height:1.5;resize:vertical;"></textarea>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+      <button class="btn" onclick="copyPayEmail()">📋 Copy to clipboard</button>
+      <span id="p-msg-copied" style="display:none;font-size:12px;color:#0F6E56;font-weight:500;">Copied!</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===================== WEEK OF TAB ===================== -->
+<div class="tab-content" id="tab-weekof">
+  <div class="form-card">
+    <div class="form-title">Select Week</div>
+    <div class="form-grid">
+      <div class="field"><label>Saved Weeks</label><select id="wo-week" onchange="renderWeekOf()"></select></div>
+    </div>
+    <div class="period-banner" id="wo-period-banner">No weeks saved yet. Save an employee from the Pay Calculator tab to start.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+      <button class="btn teal" onclick="downloadWeekExcel()">⬇️ Download Excel</button>
+    </div>
+    <div class="toast" id="wo-toast"></div>
+  </div>
+  <div class="form-card">
+    <div class="form-title">Employees This Week</div>
+    <div class="wo-table-wrap" id="wo-table-wrap"></div>
+  </div>
+</div>
+
+<div class="footer"><strong>Bee Pristine</strong> · Cleaner Pay Calculator · 832-843-1948</div>
+</div>
+
+<script>
+// ── CONSTANTS ──
+const PHOTO_PRICE=25;
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAYS=[
+  {key:'fri',name:'Friday'},{key:'sat',name:'Saturday'},{key:'sun',name:'Sunday'},
+  {key:'mon',name:'Monday'},{key:'tue',name:'Tuesday'},{key:'wed',name:'Wednesday'},{key:'thu',name:'Thursday'}
+];
+const CLEAN_TYPES=['—','Standard Cleaning','Deep Cleaning','Move In Cleaning','Move Out Cleaning','Event Cleaning','Training/Coaching','Other'];
+const SUBS=[{key:'advance',label:'Advance'},{key:'supplies',label:'Supplies'},{key:'damage',label:'Damage'}];
+const ADDS=[{key:'supplies',label:'Supplies'},{key:'gas',label:'Gas'},{key:'training',label:'Training/Coaching'},{key:'misc',label:'Miscellaneous'}];
+const STORE_KEY='beePristinePayRecords';
+let photoQty=0;
+let records=loadRecords();
+
+// ── HELPERS ──
+function fmt(n){return '$'+(Math.round(n*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtMDY(d){return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);}
+function fmtLong(d){return MONTHS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();}
+function fmtHM(totalMin){const h=Math.floor(totalMin/60),m=Math.round(totalMin%60);return h+'h '+m+'m';}
+function parseLocalDate(v){if(!v)return null;const p=v.split('-');return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function snapToFriday(d){const diff=(d.getDay()-5+7)%7;return addDays(d,-diff);}
+function isoOf(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function weekLabel(startISO){const s=parseLocalDate(startISO),e=addDays(s,6);return fmtMDY(s)+' - '+fmtMDY(e);}
+
+// ── STORAGE ──
+function loadRecords(){try{const r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):[];}catch(e){return [];}}
+function saveRecords(){try{localStorage.setItem(STORE_KEY,JSON.stringify(records));}catch(e){}}
+
+// ── BUILD UI ──
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='weekof')buildWeekDropdown();
+}
+function buildMonths(){
+  const sel=document.getElementById('p-month');
+  sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+  sel.value=new Date().getMonth();
+}
+function buildDays(){
+  document.getElementById('p-days').innerHTML=DAYS.map(d=>`
+    <div class="day-row">
+      <div><span class="day-name">${d.name}</span><span class="day-sub" id="p-date-${d.key}"></span></div>
+      <div class="time-wrap"><input type="number" id="p-h-${d.key}" min="0" max="24" step="1" placeholder="0" inputmode="numeric" oninput="calcPay()"><span>hr</span></div>
+      <div class="time-wrap"><input type="number" id="p-m-${d.key}" min="0" max="59" step="5" placeholder="0" inputmode="numeric" oninput="calcPay()"><span>min</span></div>
+      <select id="p-t-${d.key}" onchange="calcPay()">${CLEAN_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+    </div>`).join('');
+}
+function buildSubs(){
+  document.getElementById('p-subs').innerHTML=SUBS.map(s=>`
+    <div class="adj-row">
+      <div class="adj-label">${s.label}</div>
+      <div class="money-wrap"><span>$</span><input type="number" id="p-sub-${s.key}" value="0" min="0" step="0.01" inputmode="decimal" oninput="calcPay()"></div>
+      <div class="note-input"><input type="text" id="p-subnote-${s.key}" placeholder="Note (optional)" oninput="calcPay()"></div>
+    </div>`).join('');
+}
+function buildAdds(){
+  document.getElementById('p-adds').innerHTML=ADDS.map(a=>`
+    <div class="adj-row">
+      <div class="adj-label">${a.label}</div>
+      <div class="money-wrap"><span>$</span><input type="number" id="p-add-${a.key}" value="0" min="0" step="0.01" inputmode="decimal" oninput="calcPay()"></div>
+      <div class="note-input"><input type="text" id="p-addnote-${a.key}" placeholder="Note (optional)" oninput="calcPay()"></div>
+    </div>`).join('');
+}
+function changePhotoQty(delta){photoQty=Math.max(0,photoQty+delta);document.getElementById('p-photo-qty').textContent=photoQty;calcPay();}
+
+// ── PERIOD ──
+function getPeriod(){
+  const raw=parseLocalDate(document.getElementById('p-week').value);
+  if(!raw)return null;
+  const start=snapToFriday(raw);
+  return {start,end:addDays(start,6),payDate:addDays(start,7)};
+}
+function onWeekChange(){
+  const p=getPeriod();
+  if(p){document.getElementById('p-week').value=isoOf(p.start);document.getElementById('p-month').value=p.start.getMonth();}
+  calcPay();
+}
+
+// ── CALCULATE ──
+function gatherData(){
+  const p=getPeriod();
+  let totalMin=0;const dayLines=[];
+  DAYS.forEach(d=>{
+    const h=parseInt(document.getElementById('p-h-'+d.key).value)||0;
+    const m=parseInt(document.getElementById('p-m-'+d.key).value)||0;
+    const type=document.getElementById('p-t-'+d.key).value;
+    const mins=h*60+m;
+    if(mins>0){totalMin+=mins;dayLines.push({name:d.name,mins,type:type==='—'?'':type});}
+  });
+  const totalHours=totalMin/60;
+  const rate=parseFloat(document.getElementById('p-rate').value)||0;
+  const gross=totalHours*rate;
+  let subTotal=0;const subLines=[];
+  SUBS.forEach(s=>{const v=parseFloat(document.getElementById('p-sub-'+s.key).value)||0;const note=(document.getElementById('p-subnote-'+s.key).value||'').trim();if(v>0){subTotal+=v;subLines.push({label:s.label,amt:v,note});}});
+  let addTotal=0;const addLines=[];
+  const photoAmt=photoQty*PHOTO_PRICE;
+  if(photoAmt>0){const note=(document.getElementById('p-photo-note').value||'').trim();addTotal+=photoAmt;addLines.push({label:'Marketing Photos ('+photoQty+')',amt:photoAmt,note});}
+  ADDS.forEach(a=>{const v=parseFloat(document.getElementById('p-add-'+a.key).value)||0;const note=(document.getElementById('p-addnote-'+a.key).value||'').trim();if(v>0){addTotal+=v;addLines.push({label:a.label,amt:v,note});}});
+  const net=gross-subTotal+addTotal;
+  const first=(document.getElementById('p-first').value||'').trim();
+  const last=(document.getElementById('p-last').value||'').trim();
+  return {p,dayLines,totalMin,totalHours,rate,gross,subLines,subTotal,addLines,addTotal,net,
+    first,last,fullName:(first+' '+last).trim(),paymentType:document.getElementById('p-paytype').value};
+}
+function calcPay(){
+  const p=getPeriod();
+  const banner=document.getElementById('p-period-banner');
+  if(p){
+    banner.innerHTML=`<strong>Pay period:</strong> ${WEEKDAYS[p.start.getDay()]} ${fmtMDY(p.start)} to ${WEEKDAYS[p.end.getDay()]} ${fmtMDY(p.end)}<br><strong>Pay date:</strong> Friday ${fmtMDY(p.payDate)}`;
+    DAYS.forEach((d,i)=>{const el=document.getElementById('p-date-'+d.key);if(el)el.textContent=fmtMDY(addDays(p.start,i));});
+  }else{banner.innerHTML='Pick a week start date to set the pay period.';DAYS.forEach(d=>{const el=document.getElementById('p-date-'+d.key);if(el)el.textContent='';});}
+
+  const data=gatherData();window._payData=data;
+  const out=document.getElementById('p-output');
+  out.innerHTML=`<div class="result-grid">
+    <div class="metric"><div class="metric-label">Total Hours</div><div class="metric-val">${fmtHM(data.totalMin)}</div><div class="metric-note">${data.dayLines.length} day${data.dayLines.length===1?'':'s'} worked</div></div>
+    <div class="metric"><div class="metric-label">Total Pay</div><div class="metric-val teal">${fmt(data.gross)}</div><div class="metric-note">at ${fmt(data.rate)}/hr</div></div>
+    <div class="metric"><div class="metric-label">Net Pay</div><div class="metric-val green">${fmt(data.net)}</div><div class="metric-note">after adjustments</div></div>
+  </div>
+  <div class="detail-card">
+    <div class="detail-title">Pay Breakdown</div>
+    ${data.dayLines.length?data.dayLines.map(l=>`<div class="detail-row"><span class="dl">${l.name}${l.type?' · '+l.type:''}</span><span class="dv">${fmtHM(l.mins)}</span></div>`).join(''):'<div class="detail-row"><span class="dl">No hours entered yet</span><span class="dv">0h 0m</span></div>'}
+    <div class="divider"></div>
+    <div class="detail-row"><span class="dl">Total hours</span><span class="dv">${fmtHM(data.totalMin)}</span></div>
+    <div class="detail-row"><span class="dl">Hourly rate</span><span class="dv">${fmt(data.rate)}</span></div>
+    <div class="detail-row"><span class="dl">Total pay</span><span class="dv">${fmt(data.gross)}</span></div>
+    ${data.addLines.length?`<div class="section-label">Additional Pay</div>${data.addLines.map(l=>`<div class="detail-row"><span class="dl">${l.label}${l.note?' · '+l.note:''}</span><span class="dv green">+${fmt(l.amt)}</span></div>`).join('')}<div class="detail-row"><span class="dl">Total additional pay</span><span class="dv green">+${fmt(data.addTotal)}</span></div>`:''}
+    ${data.subLines.length?`<div class="section-label">Subtractions</div>${data.subLines.map(l=>`<div class="detail-row"><span class="dl">${l.label}${l.note?' · '+l.note:''}</span><span class="dv red">${fmt(l.amt)}</span></div>`).join('')}<div class="detail-row"><span class="dl">Total subtractions</span><span class="dv red">${fmt(data.subTotal)}</span></div>`:''}
+    <div class="detail-row highlight"><span class="dl">Net Pay</span><span class="dv">${fmt(data.net)}</span></div>
+    <div class="detail-row"><span class="dl">Payment method</span><span class="dv">${data.paymentType}</span></div>
+  </div>`;
+  const mo=document.getElementById('p-msg-output');
+  if(mo&&mo.style.display==='block')generatePayEmail();
+}
+
+// ── EMAIL ──
+function generatePayEmail(){
+  const data=gatherData();window._payData=data;
+  const name=data.first||'there';
+  const p=data.p;
+  let weekRange='this week', periodLong='';
+  if(p){
+    weekRange=fmtMDY(p.start)+' - '+fmtMDY(p.end);
+    periodLong='Pay period: '+WEEKDAYS[p.start.getDay()]+', '+fmtLong(p.start)+' to '+WEEKDAYS[p.end.getDay()]+', '+fmtLong(p.end)+'\n'
+      +'Pay date: Friday, '+fmtLong(p.payDate)+'\n\n';
+  }
+  const hasAdj=data.addLines.length||data.subLines.length;
+  let body=periodLong;
+  body+='Hours worked:\n';
+  if(data.dayLines.length){data.dayLines.forEach(l=>{body+='  '+l.name+': '+fmtHM(l.mins)+(l.type?' ('+l.type+')':'')+'\n';});}
+  else{body+='  None recorded\n';}
+  body+='\nTotal hours: '+fmtHM(data.totalMin)+'\n';
+  body+='Hourly rate: '+fmt(data.rate)+'\n';
+  if(hasAdj)body+='Base pay: '+fmt(data.gross)+'\n';
+  if(data.addLines.length){
+    body+='\nAdditional pay:\n';
+    data.addLines.forEach(l=>{body+='  '+l.label+(l.note?' ('+l.note+')':'')+': '+fmt(l.amt)+'\n';});
+    body+='  Total additional pay: '+fmt(data.addTotal)+'\n';
+  }
+  if(data.subLines.length){
+    body+='\nSubtractions:\n';
+    data.subLines.forEach(l=>{body+='  '+l.label+(l.note?' ('+l.note+')':'')+': '+fmt(l.amt)+'\n';});
+    body+='  Total subtractions: '+fmt(data.subTotal)+'\n';
+  }
+  body+='\nTotal pay: '+fmt(data.net)+'\n';
+  body+='Payment method: '+data.paymentType+'\n';
+
+  const msg='Hi '+name+',\n\n'
+    +'Please find the breakdown of your pay for the week of '+weekRange+' below.\n\n'
+    +body+'\n'
+    +'If you have any questions or concerns please reach out to me. I truly appreciate all the hard work you put it in. Thank you always, have a beautiful day!\n\n'
+    +'Best,\nChuka Okechukwu\nBee Pristine\n832-843-1948';
+
+  const ta=document.getElementById('p-msg-text');if(ta)ta.value=msg;
+  const wrap=document.getElementById('p-msg-output');if(wrap)wrap.style.display='block';
+  const cp=document.getElementById('p-msg-copied');if(cp)cp.style.display='none';
+}
+function copyPayEmail(){
+  const ta=document.getElementById('p-msg-text');if(!ta)return;
+  const showCopied=()=>{const cp=document.getElementById('p-msg-copied');if(cp){cp.style.display='inline';setTimeout(()=>{cp.style.display='none';},2000);}};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(showCopied).catch(()=>{ta.select();document.execCommand('copy');showCopied();});}
+  else{ta.select();document.execCommand('copy');showCopied();}
+}
+function toast(id,msg){const t=document.getElementById(id);if(!t)return;t.textContent=msg;t.style.display='block';setTimeout(()=>{t.style.display='none';},3500);}
+function resetForm(){
+  document.getElementById('p-first').value='';document.getElementById('p-last').value='';
+  document.getElementById('p-week').value='';document.getElementById('p-rate').value='24.00';
+  document.getElementById('p-paytype').value='Zelle';
+  DAYS.forEach(d=>{document.getElementById('p-h-'+d.key).value='';document.getElementById('p-m-'+d.key).value='';document.getElementById('p-t-'+d.key).value='—';});
+  SUBS.forEach(s=>{document.getElementById('p-sub-'+s.key).value='0';document.getElementById('p-subnote-'+s.key).value='';});
+  ADDS.forEach(a=>{document.getElementById('p-add-'+a.key).value='0';document.getElementById('p-addnote-'+a.key).value='';});
+  photoQty=0;document.getElementById('p-photo-qty').textContent='0';document.getElementById('p-photo-note').value='';
+  document.getElementById('p-msg-output').style.display='none';
+  document.getElementById('p-month').value=new Date().getMonth();
+  calcPay();
+}
+
+// ── SAVE TO WEEK ──
+function saveToWeek(){
+  const data=gatherData();
+  if(!data.p){toast('p-save-toast','⚠️ Pick a week start date before saving.');return;}
+  if(!data.first){toast('p-save-toast','⚠️ Enter the employee first name before saving.');return;}
+  if(data.totalMin===0){toast('p-save-toast','⚠️ Enter at least some hours before saving.');return;}
+  const rec={
+    weekStartISO:isoOf(data.p.start),weekEndISO:isoOf(data.p.end),payDateISO:isoOf(data.p.payDate),
+    first:data.first,last:data.last,fullName:data.fullName,
+    paymentType:data.paymentType,rate:data.rate,
+    days:data.dayLines,daysWorked:data.dayLines.map(l=>l.name),
+    totalMin:data.totalMin,totalHours:data.totalHours,
+    gross:data.gross,subTotal:data.subTotal,addTotal:data.addTotal,net:data.net
+  };
+  // replace existing record for same employee+week, else add
+  const key=rec.fullName.toLowerCase()+'|'+rec.weekStartISO;
+  const idx=records.findIndex(r=>(r.fullName.toLowerCase()+'|'+r.weekStartISO)===key);
+  if(idx>=0){records[idx]=rec;toast('p-save-toast','✅ Updated '+rec.fullName+' for week '+weekLabel(rec.weekStartISO)+'.');}
+  else{records.push(rec);toast('p-save-toast','✅ Saved '+rec.fullName+' to week '+weekLabel(rec.weekStartISO)+'.');}
+  saveRecords();
+}
+
+// ── WEEK OF TAB ──
+function uniqueWeeks(){
+  const set={};records.forEach(r=>{set[r.weekStartISO]=true;});
+  return Object.keys(set).sort().reverse();
+}
+function buildWeekDropdown(){
+  const sel=document.getElementById('wo-week');
+  const weeks=uniqueWeeks();
+  const prev=sel.value;
+  sel.innerHTML=weeks.length?weeks.map(w=>`<option value="${w}">${weekLabel(w)}</option>`).join(''):'<option value="">No weeks saved</option>';
+  if(weeks.includes(prev))sel.value=prev;
+  renderWeekOf();
+}
+function recordsForWeek(wk){return records.filter(r=>r.weekStartISO===wk).sort((a,b)=>a.fullName.localeCompare(b.fullName));}
+function renderWeekOf(){
+  const wk=document.getElementById('wo-week').value;
+  const banner=document.getElementById('wo-period-banner');
+  const wrap=document.getElementById('wo-table-wrap');
+  if(!wk){banner.innerHTML='No weeks saved yet. Save an employee from the Pay Calculator tab to start.';wrap.innerHTML='<div class="wo-empty">Nothing saved for this week yet.</div>';return;}
+  const s=parseLocalDate(wk),e=addDays(s,6),pay=addDays(s,7);
+  banner.innerHTML=`<strong>Week of:</strong> ${WEEKDAYS[s.getDay()]} ${fmtMDY(s)} to ${WEEKDAYS[e.getDay()]} ${fmtMDY(e)}<br><strong>Pay date:</strong> Friday ${fmtMDY(pay)}`;
+  const recs=recordsForWeek(wk);
+  if(!recs.length){wrap.innerHTML='<div class="wo-empty">Nothing saved for this week yet.</div>';return;}
+  let totHrs=0,totPay=0;
+  const rows=recs.map((r,i)=>{totHrs+=r.totalMin;totPay+=r.net;return `<tr>
+    <td>${r.fullName}</td>
+    <td>${r.daysWorked.join(', ')||'—'}</td>
+    <td class="num">${fmtHM(r.totalMin)}</td>
+    <td class="num">${fmt(r.net)}</td>
+    <td>${r.paymentType}</td>
+    <td class="num">${fmtMDY(parseLocalDate(r.payDateISO))}</td>
+    <td style="text-align:center"><button class="wo-remove" title="Remove" onclick="removeRecord('${wk}',${i})">×</button></td>
+  </tr>`;}).join('');
+  wrap.innerHTML=`<table class="wo">
+    <thead><tr><th>Employee</th><th>Days Worked</th><th>Total Hours</th><th>Total Pay</th><th>Payment</th><th>Pay Date</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td>Totals (${recs.length})</td><td></td><td class="num">${fmtHM(totHrs)}</td><td class="num">${fmt(totPay)}</td><td></td><td></td><td></td></tr></tfoot>
+  </table>`;
+}
+function removeRecord(wk,i){
+  const recs=recordsForWeek(wk);const target=recs[i];if(!target)return;
+  if(!confirm('Remove '+target.fullName+' from this week?'))return;
+  const gi=records.findIndex(r=>r.weekStartISO===target.weekStartISO&&r.fullName===target.fullName);
+  if(gi>=0){records.splice(gi,1);saveRecords();buildWeekDropdown();}
+}
+
+// ── EXCEL EXPORT ──
+function loadXLSX(){
+  return new Promise((resolve,reject)=>{
+    if(window.XLSX)return resolve(window.XLSX);
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=()=>window.XLSX?resolve(window.XLSX):reject(new Error('no xlsx'));
+    s.onerror=()=>reject(new Error('load failed'));
+    document.head.appendChild(s);
+  });
+}
+function weekAOA(wk){
+  const recs=recordsForWeek(wk);
+  const s=parseLocalDate(wk),e=addDays(s,6),pay=addDays(s,7);
+  const header=['Employee','Days Worked','Total Hours','Total Pay','Payment Method','Pay Date'];
+  const rows=recs.map(r=>[r.fullName,r.daysWorked.join(', '),fmtHM(r.totalMin),Number(r.net.toFixed(2)),r.paymentType,fmtMDY(parseLocalDate(r.payDateISO))]);
+  const totHrs=recs.reduce((a,r)=>a+r.totalMin,0),totPay=recs.reduce((a,r)=>a+r.net,0);
+  const aoa=[
+    ['Bee Pristine — Weekly Payroll'],
+    ['Week of '+fmtMDY(s)+' - '+fmtMDY(e)+'   |   Pay date: Friday '+fmtMDY(pay)],
+    [],
+    header,
+    ...rows,
+    [],
+    ['Totals ('+recs.length+' employees)','',fmtHM(totHrs),Number(totPay.toFixed(2)),'','']
+  ];
+  return aoa;
+}
+function downloadWeekExcel(){
+  const wk=document.getElementById('wo-week').value;
+  if(!wk||!recordsForWeek(wk).length){toast('wo-toast','⚠️ No saved employees for this week.');return;}
+  const aoa=weekAOA(wk);
+  const fname='BeePristine_Payroll_'+wk+'.xlsx';
+  loadXLSX().then(XLSX=>{
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:22},{wch:34},{wch:12},{wch:12},{wch:14},{wch:12}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Week Of');
+    XLSX.writeFile(wb,fname);
+    toast('wo-toast','✅ Downloaded '+fname);
+  }).catch(()=>{
+    // offline fallback: CSV
+    const csv=aoa.map(row=>row.map(c=>{const v=(c==null?'':String(c));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='BeePristine_Payroll_'+wk+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('wo-toast','⬇️ Saved as CSV (opens in Excel). Connect to internet for .xlsx.');
+  });
+}
+
+// ── INIT ──
+buildMonths();buildDays();buildSubs();buildAdds();calcPay();buildWeekDropdown();
+</script>
+</body>
+</html>
