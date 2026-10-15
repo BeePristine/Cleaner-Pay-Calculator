@@ -120,12 +120,18 @@ table.wo tfoot td{border-top:0.5px solid #E0E4EA;border-bottom:none;font-weight:
 <div class="form-card">
   <div class="form-title">Employee & Pay Period</div>
   <div class="form-grid">
+    <div class="field"><label>Saved Employees</label><select id="p-emp" onchange="pickEmployee()"><option value="">— Select saved —</option></select></div>
     <div class="field"><label>First Name</label><input type="text" id="p-first" placeholder="First name" oninput="calcPay()"></div>
     <div class="field"><label>Last Name (optional)</label><input type="text" id="p-last" placeholder="Last name" oninput="calcPay()"></div>
     <div class="field"><label>Month</label><select id="p-month" onchange="calcPay()"></select></div>
     <div class="field"><label>Week Starting (Friday)</label><input type="date" id="p-week" onchange="onWeekChange()"></div>
     <div class="field"><label>Payment Type</label><select id="p-paytype" onchange="calcPay()"><option value="Zelle">Zelle</option><option value="CashApp">CashApp</option></select></div>
   </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+    <button class="btn ghost" onclick="saveName()">💾 Save Name</button>
+    <button class="btn ghost" onclick="deleteName()">🗑 Delete Name</button>
+  </div>
+  <div class="toast" id="p-name-toast"></div>
   <div class="period-banner" id="p-period-banner">Pick a week start date to set the pay period.</div>
 </div>
 
@@ -223,8 +229,11 @@ const CLEAN_TYPES=['—','Standard Cleaning','Deep Cleaning','Move In Cleaning',
 const SUBS=[{key:'advance',label:'Advance'},{key:'supplies',label:'Supplies'},{key:'damage',label:'Damage'}];
 const ADDS=[{key:'supplies',label:'Supplies'},{key:'gas',label:'Gas'},{key:'training',label:'Training/Coaching'},{key:'misc',label:'Miscellaneous'}];
 const STORE_KEY='beePristinePayRecords';
+const EMP_KEY='beePristineEmployees';
 let photoQty=0;
 let records=loadRecords();
+let employees=loadEmployees();
+let editingKey=null;
 
 // ── HELPERS ──
 function fmt(n){return '$'+(Math.round(n*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -240,6 +249,47 @@ function weekLabel(startISO){const s=parseLocalDate(startISO),e=addDays(s,6);ret
 // ── STORAGE ──
 function loadRecords(){try{const r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):[];}catch(e){return [];}}
 function saveRecords(){try{localStorage.setItem(STORE_KEY,JSON.stringify(records));}catch(e){}}
+function loadEmployees(){try{const r=localStorage.getItem(EMP_KEY);return r?JSON.parse(r):[];}catch(e){return [];}}
+function saveEmployees(){try{localStorage.setItem(EMP_KEY,JSON.stringify(employees));}catch(e){}}
+
+// ── EMPLOYEE ROSTER ──
+function empName(e){return (e.first+' '+(e.last||'')).trim();}
+function buildEmployeeDropdown(){
+  const sel=document.getElementById('p-emp');if(!sel)return;
+  sel.innerHTML='<option value="">— Select saved —</option>'+employees.map((e,i)=>`<option value="${i}">${empName(e)}</option>`).join('');
+}
+function pickEmployee(){
+  const v=document.getElementById('p-emp').value;if(v==='')return;
+  const e=employees[parseInt(v)];if(!e)return;
+  document.getElementById('p-first').value=e.first||'';
+  document.getElementById('p-last').value=e.last||'';
+  calcPay();
+}
+function addEmployeeIfNew(first,last){
+  first=(first||'').trim();last=(last||'').trim();
+  if(!first)return false;
+  const key=(first+' '+last).toLowerCase().trim();
+  if(employees.some(e=>empName(e).toLowerCase()===key))return false;
+  employees.push({first,last});
+  employees.sort((a,b)=>empName(a).localeCompare(empName(b)));
+  saveEmployees();buildEmployeeDropdown();return true;
+}
+function saveName(){
+  const first=(document.getElementById('p-first').value||'').trim();
+  const last=(document.getElementById('p-last').value||'').trim();
+  if(!first){toast('p-name-toast','⚠️ Enter a first name to save.');return;}
+  if(addEmployeeIfNew(first,last))toast('p-name-toast','✅ Saved '+(first+' '+last).trim()+' to your employee list.');
+  else toast('p-name-toast','✅ '+(first+' '+last).trim()+' is already saved.');
+}
+function deleteName(){
+  const sel=document.getElementById('p-emp');const v=sel.value;
+  if(v===''){toast('p-name-toast','⚠️ Select a saved employee from the dropdown to delete.');return;}
+  const e=employees[parseInt(v)];if(!e)return;
+  if(!confirm('Delete '+empName(e)+' from your saved employee list? This does not remove their saved pay records.'))return;
+  employees.splice(parseInt(v),1);
+  saveEmployees();buildEmployeeDropdown();
+  toast('p-name-toast','🗑 Removed '+empName(e)+' from your employee list.');
+}
 
 // ── BUILD UI ──
 function switchTab(tab,btn){
@@ -414,6 +464,17 @@ function resetForm(){
 }
 
 // ── SAVE TO WEEK ──
+function captureForm(){
+  return {
+    days:DAYS.map(d=>({key:d.key,h:document.getElementById('p-h-'+d.key).value,m:document.getElementById('p-m-'+d.key).value,type:document.getElementById('p-t-'+d.key).value})),
+    rate:document.getElementById('p-rate').value,
+    paytype:document.getElementById('p-paytype').value,
+    month:document.getElementById('p-month').value,
+    subs:SUBS.map(s=>({key:s.key,amt:document.getElementById('p-sub-'+s.key).value,note:document.getElementById('p-subnote-'+s.key).value})),
+    adds:ADDS.map(a=>({key:a.key,amt:document.getElementById('p-add-'+a.key).value,note:document.getElementById('p-addnote-'+a.key).value})),
+    photoQty:photoQty,photoNote:document.getElementById('p-photo-note').value
+  };
+}
 function saveToWeek(){
   const data=gatherData();
   if(!data.p){toast('p-save-toast','⚠️ Pick a week start date before saving.');return;}
@@ -425,14 +486,60 @@ function saveToWeek(){
     paymentType:data.paymentType,rate:data.rate,
     days:data.dayLines,daysWorked:data.dayLines.map(l=>l.name),
     totalMin:data.totalMin,totalHours:data.totalHours,
-    gross:data.gross,subTotal:data.subTotal,addTotal:data.addTotal,net:data.net
+    gross:data.gross,subTotal:data.subTotal,addTotal:data.addTotal,net:data.net,
+    form:captureForm()
   };
+  // auto-add to the employee roster so the name is available next time
+  addEmployeeIfNew(data.first,data.last);
+  const newKey=rec.fullName.toLowerCase()+'|'+rec.weekStartISO;
+  // if we were editing an existing record whose name/week changed, remove the original
+  if(editingKey && editingKey!==newKey){
+    const oi=records.findIndex(r=>(r.fullName.toLowerCase()+'|'+r.weekStartISO)===editingKey);
+    if(oi>=0)records.splice(oi,1);
+  }
+  editingKey=null;
   // replace existing record for same employee+week, else add
-  const key=rec.fullName.toLowerCase()+'|'+rec.weekStartISO;
-  const idx=records.findIndex(r=>(r.fullName.toLowerCase()+'|'+r.weekStartISO)===key);
+  const idx=records.findIndex(r=>(r.fullName.toLowerCase()+'|'+r.weekStartISO)===newKey);
   if(idx>=0){records[idx]=rec;toast('p-save-toast','✅ Updated '+rec.fullName+' for week '+weekLabel(rec.weekStartISO)+'.');}
   else{records.push(rec);toast('p-save-toast','✅ Saved '+rec.fullName+' to week '+weekLabel(rec.weekStartISO)+'.');}
   saveRecords();
+}
+// ── EDIT A SAVED TIMESHEET ──
+function loadRecordIntoForm(rec){
+  const f=rec.form;
+  document.getElementById('p-emp').value='';
+  document.getElementById('p-first').value=rec.first||'';
+  document.getElementById('p-last').value=rec.last||'';
+  document.getElementById('p-week').value=rec.weekStartISO||'';
+  document.getElementById('p-rate').value=(f&&f.rate!=null&&f.rate!=='')?f.rate:(rec.rate!=null?rec.rate:'24.00');
+  document.getElementById('p-paytype').value=(f&&f.paytype)?f.paytype:(rec.paymentType||'Zelle');
+  if(f&&f.month!=null&&f.month!=='')document.getElementById('p-month').value=f.month;
+  // days
+  DAYS.forEach(d=>{document.getElementById('p-h-'+d.key).value='';document.getElementById('p-m-'+d.key).value='';document.getElementById('p-t-'+d.key).value='—';});
+  if(f&&f.days){
+    f.days.forEach(dd=>{const h=document.getElementById('p-h-'+dd.key);if(h)h.value=dd.h||'';const m=document.getElementById('p-m-'+dd.key);if(m)m.value=dd.m||'';const t=document.getElementById('p-t-'+dd.key);if(t)t.value=dd.type||'—';});
+  }else if(rec.days){
+    const nameToKey={};DAYS.forEach(d=>nameToKey[d.name]=d.key);
+    rec.days.forEach(l=>{const k=nameToKey[l.name];if(!k)return;document.getElementById('p-h-'+k).value=Math.floor(l.mins/60);document.getElementById('p-m-'+k).value=l.mins%60;document.getElementById('p-t-'+k).value=l.type||'—';});
+  }
+  // subtractions
+  SUBS.forEach(s=>{document.getElementById('p-sub-'+s.key).value='0';document.getElementById('p-subnote-'+s.key).value='';});
+  if(f&&f.subs)f.subs.forEach(ss=>{const a=document.getElementById('p-sub-'+ss.key);if(a)a.value=ss.amt||'0';const n=document.getElementById('p-subnote-'+ss.key);if(n)n.value=ss.note||'';});
+  // additional pay
+  ADDS.forEach(a=>{document.getElementById('p-add-'+a.key).value='0';document.getElementById('p-addnote-'+a.key).value='';});
+  if(f&&f.adds)f.adds.forEach(aa=>{const a=document.getElementById('p-add-'+aa.key);if(a)a.value=aa.amt||'0';const n=document.getElementById('p-addnote-'+aa.key);if(n)n.value=aa.note||'';});
+  photoQty=(f&&f.photoQty!=null)?f.photoQty:0;document.getElementById('p-photo-qty').textContent=photoQty;
+  document.getElementById('p-photo-note').value=(f&&f.photoNote)?f.photoNote:'';
+  document.getElementById('p-msg-output').style.display='none';
+  editingKey=rec.fullName.toLowerCase()+'|'+rec.weekStartISO;
+  calcPay();
+}
+function editRecord(wk,i){
+  const target=recordsForWeek(wk)[i];if(!target)return;
+  loadRecordIntoForm(target);
+  switchTab('calc',document.querySelectorAll('.tab-btn')[0]);
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('p-save-toast','✏️ Editing '+target.fullName+' for week '+weekLabel(wk)+'. Make your changes, then click Save to Week Of.');
 }
 
 // ── WEEK OF TAB ──
@@ -466,7 +573,7 @@ function renderWeekOf(){
     <td class="num">${fmt(r.net)}</td>
     <td>${r.paymentType}</td>
     <td class="num">${fmtMDY(parseLocalDate(r.payDateISO))}</td>
-    <td style="text-align:center"><button class="wo-remove" title="Remove" onclick="removeRecord('${wk}',${i})">×</button></td>
+    <td style="text-align:center;white-space:nowrap"><button class="wo-remove" title="Edit" style="color:#1B5E8A;font-size:14px" onclick="editRecord('${wk}',${i})">✎</button><button class="wo-remove" title="Remove" onclick="removeRecord('${wk}',${i})">×</button></td>
   </tr>`;}).join('');
   wrap.innerHTML=`<table class="wo">
     <thead><tr><th>Employee</th><th>Days Worked</th><th>Total Hours</th><th>Total Pay</th><th>Payment</th><th>Pay Date</th><th></th></tr></thead>
@@ -532,7 +639,7 @@ function downloadWeekExcel(){
 }
 
 // ── INIT ──
-buildMonths();buildDays();buildSubs();buildAdds();calcPay();buildWeekDropdown();
+buildMonths();buildDays();buildSubs();buildAdds();buildEmployeeDropdown();calcPay();buildWeekDropdown();
 </script>
 </body>
 </html>
