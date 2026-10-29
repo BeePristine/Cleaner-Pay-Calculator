@@ -184,6 +184,7 @@ table.wo tfoot td{border-top:0.5px solid #E0E4EA;border-bottom:none;font-weight:
     <button class="btn ghost" onclick="resetForm()">↺ Reset Form</button>
   </div>
   <div class="toast" id="p-save-toast"></div>
+  <div id="p-backup-reminder" style="display:none;margin-top:10px;padding:10px 13px;background:#FDF6E3;border:0.5px solid #F0D080;border-radius:10px;font-size:12px;color:#854F0B;line-height:1.5;"></div>
   <div id="p-msg-output" style="display:none;margin-top:12px;">
     <textarea id="p-msg-text" readonly style="width:100%;min-height:420px;padding:12px;border:0.5px solid #D1D5DB;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;color:#0D1B2A;line-height:1.5;resize:vertical;"></textarea>
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
@@ -210,6 +211,16 @@ table.wo tfoot td{border-top:0.5px solid #E0E4EA;border-bottom:none;font-weight:
   <div class="form-card">
     <div class="form-title">Employees This Week</div>
     <div class="wo-table-wrap" id="wo-table-wrap"></div>
+  </div>
+  <div class="form-card">
+    <div class="form-title">Data Backup & Restore</div>
+    <div class="mode-banner">⚠️ <strong>Important:</strong> Your saved weeks and employees live in this browser only. Clearing your browser cache or data will erase them. Download a backup regularly and keep the file somewhere safe (Google Drive, email). You can restore it here anytime, even on a new device.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn teal" onclick="backupData()">⬇️ Backup All Data</button>
+      <button class="btn ghost" onclick="document.getElementById('restore-file').click()">⬆️ Restore from Backup</button>
+      <input type="file" id="restore-file" accept="application/json,.json" style="display:none" onchange="restoreData(event)">
+    </div>
+    <div class="toast" id="backup-toast"></div>
   </div>
 </div>
 
@@ -251,6 +262,17 @@ function loadRecords(){try{const r=localStorage.getItem(STORE_KEY);return r?JSON
 function saveRecords(){try{localStorage.setItem(STORE_KEY,JSON.stringify(records));}catch(e){}}
 function loadEmployees(){try{const r=localStorage.getItem(EMP_KEY);return r?JSON.parse(r):[];}catch(e){return [];}}
 function saveEmployees(){try{localStorage.setItem(EMP_KEY,JSON.stringify(employees));}catch(e){}}
+// ── BACKUP REMINDER ──
+const PENDING_KEY='beePristinePendingSaves';
+function getPending(){try{return parseInt(localStorage.getItem(PENDING_KEY))||0;}catch(e){return 0;}}
+function setPending(n){try{localStorage.setItem(PENDING_KEY,String(n));}catch(e){}}
+function bumpPending(){setPending(getPending()+1);updateBackupReminder();}
+function updateBackupReminder(){
+  const el=document.getElementById('p-backup-reminder');if(!el)return;
+  const n=getPending();
+  if(n>0){el.style.display='block';el.innerHTML='🔔 <strong>'+n+' change'+(n===1?'':'s')+' since your last backup.</strong> Go to the <strong>Week Of</strong> tab and click <strong>Backup All Data</strong> so clearing your browser cache can never erase them.';}
+  else{el.style.display='none';}
+}
 
 // ── EMPLOYEE ROSTER ──
 function empName(e){return (e.first+' '+(e.last||'')).trim();}
@@ -500,9 +522,9 @@ function saveToWeek(){
   editingKey=null;
   // replace existing record for same employee+week, else add
   const idx=records.findIndex(r=>(r.fullName.toLowerCase()+'|'+r.weekStartISO)===newKey);
-  if(idx>=0){records[idx]=rec;toast('p-save-toast','✅ Updated '+rec.fullName+' for week '+weekLabel(rec.weekStartISO)+'.');}
-  else{records.push(rec);toast('p-save-toast','✅ Saved '+rec.fullName+' to week '+weekLabel(rec.weekStartISO)+'.');}
-  saveRecords();
+  if(idx>=0){records[idx]=rec;toast('p-save-toast','✅ Updated '+rec.fullName+' for week '+weekLabel(rec.weekStartISO)+'. Remember to back up (Week Of tab).');}
+  else{records.push(rec);toast('p-save-toast','✅ Saved '+rec.fullName+' to week '+weekLabel(rec.weekStartISO)+'. Remember to back up (Week Of tab).');}
+  saveRecords();bumpPending();
 }
 // ── EDIT A SAVED TIMESHEET ──
 function loadRecordIntoForm(rec){
@@ -585,7 +607,42 @@ function removeRecord(wk,i){
   const recs=recordsForWeek(wk);const target=recs[i];if(!target)return;
   if(!confirm('Remove '+target.fullName+' from this week?'))return;
   const gi=records.findIndex(r=>r.weekStartISO===target.weekStartISO&&r.fullName===target.fullName);
-  if(gi>=0){records.splice(gi,1);saveRecords();buildWeekDropdown();}
+  if(gi>=0){records.splice(gi,1);saveRecords();buildWeekDropdown();bumpPending();}
+}
+
+// ── BACKUP & RESTORE ──
+function backupData(){
+  const payload={app:'BeePristineCleanerPay',version:1,exportedAt:new Date().toISOString(),records,employees};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='BeePristine_PayData_Backup_'+isoOf(new Date())+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setPending(0);updateBackupReminder();
+  toast('backup-toast','✅ Backup downloaded ('+records.length+' weeks, '+employees.length+' employees). Keep this file safe.');
+}
+function restoreData(ev){
+  const file=ev.target.files&&ev.target.files[0];if(!file){return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    let data;
+    try{data=JSON.parse(e.target.result);}catch(err){toast('backup-toast','⚠️ Could not read that file. Make sure it is a Bee Pristine backup (.json).');ev.target.value='';return;}
+    if(!data||(!Array.isArray(data.records)&&!Array.isArray(data.employees))){toast('backup-toast','⚠️ This does not look like a valid backup file.');ev.target.value='';return;}
+    const impRecs=Array.isArray(data.records)?data.records:[];
+    const impEmps=Array.isArray(data.employees)?data.employees:[];
+    if(!confirm('Restore '+impRecs.length+' saved week record(s) and '+impEmps.length+' employee(s) from this backup?\n\nThis merges with what you have now (matching weeks are replaced by the backup).')){ev.target.value='';return;}
+    impRecs.forEach(r=>{
+      if(!r||!r.fullName||!r.weekStartISO)return;
+      const key=r.fullName.toLowerCase()+'|'+r.weekStartISO;
+      const idx=records.findIndex(x=>(x.fullName.toLowerCase()+'|'+x.weekStartISO)===key);
+      if(idx>=0)records[idx]=r;else records.push(r);
+    });
+    impEmps.forEach(em=>{if(em&&em.first)addEmployeeIfNew(em.first,em.last);});
+    saveRecords();saveEmployees();buildEmployeeDropdown();buildWeekDropdown();
+    setPending(0);updateBackupReminder();
+    toast('backup-toast','✅ Restored. '+impRecs.length+' week record(s) and '+impEmps.length+' employee(s) merged in.');
+    ev.target.value='';
+  };
+  reader.readAsText(file);
 }
 
 // ── EXCEL EXPORT ──
@@ -639,7 +696,7 @@ function downloadWeekExcel(){
 }
 
 // ── INIT ──
-buildMonths();buildDays();buildSubs();buildAdds();buildEmployeeDropdown();calcPay();buildWeekDropdown();
+buildMonths();buildDays();buildSubs();buildAdds();buildEmployeeDropdown();calcPay();buildWeekDropdown();updateBackupReminder();
 </script>
 </body>
 </html>
